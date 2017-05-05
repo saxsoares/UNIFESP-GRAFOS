@@ -152,8 +152,9 @@ int BFS(Graph G, vertex s){
 }
 Graph Gera_G_linha(Graph G){
     Graph G_linha = malloc(sizeof *G_linha);
+    G_linha = GRAPHinit(G->V);
     int i, v;
-    link vertN, vertAux;
+    link vertN, aux;
     char *state = malloc(G->V * sizeof(char));
     for(i = 0; i < G->V; i++){
         state[i] = 0;
@@ -167,18 +168,21 @@ Graph Gera_G_linha(Graph G){
     while(!PQempty(Q))
     {
         v = PQdequeue( Q);
-        printf("%d -->",v);
-
         for (vertN = G->adj[v]->next; vertN != NULL; vertN = vertN->next){
-            for (aux = G->adj[vertN->v]->next; vertN != NULL; vertN = vertN->next){
-                if(aux->v != G->adj[v]->v && state[aux->v == 0]){
-                    state[vertN->v] = 1;
-                    PQinsert(Q, vertN->v, NULL);
+            if(state[vertN->v] == 0){
+                PQinsert(Q, vertN->v, NULL);
+            }
+            for (aux = G->adj[vertN->v]->next; aux != NULL; aux = aux->next){
+                if(aux->v != v && state[aux->v] == 0){
+                    GRAPHinsertE(G_linha, EDGE(G->adj[v]->v, aux->v, vertN->custo + aux->custo));
                 }
+            }
+            state[v] = 1;
         }
     }
     return G_linha;
 }
+
 int GRAPHspt3( Graph G, vertex s, vertex *parent, int *dist)
 {
 
@@ -248,8 +252,9 @@ int main(){
     }
 
     PrintGraph(G);
-
+    printf("\n");
     Graph G_linha = Gera_G_linha(G);
+    PrintGraph(G_linha);
 
     free(G);
     return 0;
