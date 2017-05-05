@@ -5,12 +5,21 @@
 
 typedef int vertex;
 
+typedef struct fila *Fila;
+struct fila{
+    int *no;
+    int in;
+    int out;
+    int tam;
+};
+
 typedef struct node *link;
 struct node{
     int v;
     int w;
     int custo;
     link next;
+    char flag;
 };
 
 typedef struct {
@@ -25,8 +34,6 @@ struct graph{
     Edge *edges;
     link *adj;
 };
-
-
 
 Edge EDGE(int v1, int v2, int peso){
     Edge e ;
@@ -47,44 +54,134 @@ link NEW (int v, link next, int peso){
     return x;
 }
 
+void mark(Graph G, vertex s){
+    G->adj[s]->flag = 1;
+}
+
+link NEWVERT (){
+    link insertedV = malloc (sizeof *insertedV);
+    insertedV->next = NULL;
+    return insertedV;
+}
+
 Graph GRAPHinit (int V){
     int v;
     Graph G = malloc (sizeof *G);
     G->V = V;
     G->E = 0;
     G->adj = malloc (V*sizeof (link));
-    for (v=0; v<V; v++)
-        G->adj[v] = NULL;
+    for(v = 0; v < V; v++){
+        G->adj[v] = NEWVERT();
+        G->adj[v]->flag = 'F';
+        G->adj[v]->v = v;
+    }
     return G;
 }
 
 void GRAPHinsertE (Graph G, Edge e){
     int v1 = e.v1, v2 = e.v2, peso = e.peso;
-    G->adj[v1] = NEW (v2, G->adj[v1], peso);
-    G->adj[v2] = NEW (v1, G->adj[v2], peso);
+    G->adj[v1]->next = NEW (v2, G->adj[v1]->next, peso);
+    G->adj[v2]->next = NEW (v1, G->adj[v2]->next, peso);
     G->E++;
 }
-
-int GRAPHedges (Edge a[], Graph G){
-    int v, E=0;
-    link vertN;
-    for (v = 0; v < G->V; v++)
-        for (vertN = G->adj[v]; vertN != NULL; vertN = vertN->next)
-            if (v < vertN->v) a[E++] = EDGE (v, vertN->v, 1);
-    return E;
+Fila PQinit (int V){
+    Fila Q = malloc (sizeof *Q);
+    Q->no = malloc(V * sizeof(int));
+    Q->in = -1;
+    Q->out = -1;
+    Q->tam = V;
+    return Q;
 }
+int PQempty(Fila Q){
+    if(Q->in == Q->out)
+        return 1;
+    else
+        return 0;
+}
+void PQfree( Fila Q ){
+    free(Q->no);
+    free(Q);
+}
+void PQinsert(Fila Q, int no, int *dist){
+    Q->in = (Q->in + 1)%Q->tam;
+    Q->no[Q->in] = no;
+}
+vertex PQdequeue(Fila Q){
+    vertex v;
+    Q->out = (Q->out + 1)%Q->tam;
+    v = Q->no[Q->out];
+    Q->no[Q->out] = -1;
 
-void PrintGraph (Graph G, Edge E[]){
-    int i, j;
+    return v;
+}
+vertex PQdelmin(int *dest){
+    vertex v;
+    return v;
+}
+void PQdec(int w, int *dist){
+
+}
+int BFS(Graph G, vertex s){
+    Graph G_linha = malloc(sizeof *G_linha);
+    int i, v;
     link vertN;
-    for (i=0; i < (G->E); i++){
-        printf("(%d)--%d-->(%d)\n ", E[i].v1, E[i].peso, E[i].v2);
-    printf("\n");
+    char *state = malloc(G->V * sizeof(char));
+    for(i = 0; i < G->V; i++){
+        state[i] = 0;
     }
-}
 
+    Fila Q = PQinit(G->V);
+
+    PQinsert(Q, G->adj[s]->v, NULL);
+    state[s] = 1;
+
+    while(!PQempty(Q))
+    {
+        v = PQdequeue( Q);
+        printf("%d -->",v);
+
+        for (vertN = G->adj[v]->next; vertN != NULL; vertN = vertN->next){
+            if(state[vertN->v] == 0){
+                state[vertN->v] = 1;
+                PQinsert(Q, vertN->v, NULL);
+            }
+        }
+    }
+    printf("\n");
+    return 0;
+}
+Graph Gera_G_linha(Graph G){
+    Graph G_linha = malloc(sizeof *G_linha);
+    int i, v;
+    link vertN, vertAux;
+    char *state = malloc(G->V * sizeof(char));
+    for(i = 0; i < G->V; i++){
+        state[i] = 0;
+    }
+
+    Fila Q = PQinit(G->V);
+
+    PQinsert(Q, G->adj[0]->v, NULL);
+    state[0] = 1;
+
+    while(!PQempty(Q))
+    {
+        v = PQdequeue( Q);
+        printf("%d -->",v);
+
+        for (vertN = G->adj[v]->next; vertN != NULL; vertN = vertN->next){
+            for (aux = G->adj[vertN->v]->next; vertN != NULL; vertN = vertN->next){
+                if(aux->v != G->adj[v]->v && state[aux->v == 0]){
+                    state[vertN->v] = 1;
+                    PQinsert(Q, vertN->v, NULL);
+                }
+        }
+    }
+    return G_linha;
+}
 int GRAPHspt3( Graph G, vertex s, vertex *parent, int *dist)
 {
+
    vertex v, w, y; link a; int custo;
    vertex *hook = malloc( G->V * sizeof (vertex));
 
@@ -97,11 +194,11 @@ int GRAPHspt3( Graph G, vertex s, vertex *parent, int *dist)
       hook[a->w] = s;
    }
 
-   PQinit( G->V);
+   Fila Q = PQinit( G->V);
    for (v = 0; v < G->V; v++)
-      if (v != s) PQinsert( v, dist);
+      if (v != s) PQinsert( Q, v, dist);
 
-   while (!PQempty( )) {
+   while (!PQempty( Q )) {
       y = PQdelmin( dist);
       if (dist[y] == INFINITY) break;
       parent[y] = hook[y];
@@ -115,9 +212,22 @@ int GRAPHspt3( Graph G, vertex s, vertex *parent, int *dist)
          }
       }
    }
-   PQfree( );
+   PQfree( Q );
    free( hook);
    return 0;
+}
+
+void PrintGraph (Graph G){
+    int i;
+    link vertN;
+
+    for (i=0; i < (G->V); i++){
+        printf("v(%d): ", G->adj[i]->v);
+        for (vertN = G->adj[i]->next; vertN != NULL; vertN = vertN->next){
+            printf("->(%d)", (vertN->v));
+        }
+        printf("\n");
+    }
 }
 
 int main(){
@@ -129,12 +239,18 @@ int main(){
 
 
     scanf("%d %d", N, M);
-    Graph G1 = GRAPHinit((*N));
+    Graph G = GRAPHinit((*N));
 
     for(i = 0; i < *M; i++){
         scanf("%d %d %d", &X, &Y, &D);
-        GRAPHinsertE(G1, EDGE(X, Y, D));
+        //X--; Y--;
+        GRAPHinsertE(G, EDGE(X, Y, D));
     }
 
+    PrintGraph(G);
 
+    Graph G_linha = Gera_G_linha(G);
+
+    free(G);
+    return 0;
 }
