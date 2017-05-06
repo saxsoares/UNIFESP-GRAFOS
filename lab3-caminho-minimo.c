@@ -11,6 +11,7 @@ struct fila{
     int in;
     int out;
     int tam;
+    int *dist;
 };
 
 typedef struct node *link;
@@ -87,6 +88,7 @@ void GRAPHinsertE (Graph G, Edge e){
 Fila PQinit (int V){
     Fila Q = malloc (sizeof *Q);
     Q->no = malloc(V * sizeof(int));
+    Q->dist = malloc(V * sizeof(int));
     Q->in = -1;
     Q->out = -1;
     Q->tam = V;
@@ -114,8 +116,15 @@ vertex PQdequeue(Fila Q){
 
     return v;
 }
-vertex PQdelmin(int *dest){
+vertex PQdelmin(Fila Q, int *dist){
+    int i;
     vertex v;
+    v = Q->no[0];
+    for(i = 0; i < Q->tam; i++){
+        if(dist[Q->no[i]] < dist[Q->no[v]])
+            v = Q->no[i];
+    }
+    Q->
     return v;
 }
 void PQdec(int w, int *dist){
@@ -188,14 +197,16 @@ int GRAPHspt3( Graph G, vertex s, vertex *parent, int *dist)
 
    vertex v, w, y; link a; int custo;
    vertex *hook = malloc( G->V * sizeof (vertex));
+   parent = malloc( G->V * sizeof (int));
+   dist = malloc( G->V * sizeof (int));
 
    /* inicialização: */
    for (v = 0; v < G->V; v++)
       parent[v] = -1, dist[v] = INFINITY;
    parent[s] = s, dist[s] = 0;
-   for (a = G->adj[s]; a != NULL; a = a->next) {
-      dist[a->w] = a->custo;
-      hook[a->w] = s;
+   for (a = G->adj[s]->next; a != NULL; a = a->next) {
+      dist[a->v] = a->custo;
+      hook[a->v] = s;
    }
 
    Fila Q = PQinit( G->V);
@@ -203,19 +214,23 @@ int GRAPHspt3( Graph G, vertex s, vertex *parent, int *dist)
       if (v != s) PQinsert( Q, v, dist);
 
    while (!PQempty( Q )) {
-      y = PQdelmin( dist);
-      if (dist[y] == INFINITY) break;
+      y = PQdelmin(Q, dist);
+      if (dist[y] == INFINITY) {printf("ERROR\n"); break; }
       parent[y] = hook[y];
       /* atualização de dist[]: */
-      for (a = G->adj[y]; a != NULL; a = a->next) {
-         w = a->w, custo = a->custo;
+      for (a = G->adj[y]->next; a != NULL; a = a->next) {
+         w = a->v, custo = a->custo;
          if (!(dist[y] + custo >= dist[w])) {
             dist[w] = dist[y] + custo; /* relaxa y-w */
-            PQdec( w, dist);
+            if(w == G->V - 1)
+                printf("Menor distancia %d\n", dist[w]);
+            //PQdec( w, dist);
             hook[w] = y;
          }
       }
    }
+
+
    PQfree( Q );
    free( hook);
    return 0;
@@ -253,8 +268,12 @@ int main(){
 
     PrintGraph(G);
     printf("\n");
+    vertex *parent;
+    int *dist;
+    GRAPHspt3(G, 0, parent, dist);
     Graph G_linha = Gera_G_linha(G);
     PrintGraph(G_linha);
+
 
     free(G);
     return 0;
